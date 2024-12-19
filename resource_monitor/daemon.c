@@ -5,6 +5,7 @@
  */
 
 #include "rdma-common.h"
+#include "fault.h"
 #include "util.h"
 
 static int on_connect_request(struct rdma_cm_id *id);
@@ -17,15 +18,40 @@ extern int current_verbose_level;
 
 long page_size;
 int running;
-int fault_latency_us = 30; // default value
 
 void usage(const char *prog_name) 
 {
-  fprintf(stderr, "usage: %s [-v[verbose_level]] [-f latency] ip port\n", prog_name);
+  fprintf(stderr, "usage: %s [-v[verbose_level]] [-j] [-f latency] ip port\n", prog_name);
   exit(1);
 }
 
-int parse_args(int argc, char *argv[], char **ip, int *port, int *verbose_level, int *fault_latency_us) {
+int parse_fault_method(char *arg, enum fault_method *fault_method, int *fault_latency_us) {
+  switch (arg[0]) {
+    case 'j':
+      *fault_method = FAULT_EINJ;
+      fprintf(stderr, "Fault method: EINJ\n");
+      break;
+    case 's':
+      if (arg[1] != ':') {
+        fprintf(stderr, "Error: Missing fault latency value. It must be a positive integer\n");
+        return 1;
+      }
+      *fault_method = FAULT_SPIN;
+      *fault_latency_us = atoi(&arg[2]);
+      if (*fault_latency_us <= 0) {
+        fprintf(stderr, "Error: Invalid fault latency value. It must be a positive integer.\n");
+        return 1;
+      }                
+      fprintf(stderr, "Fault method: SPIN; Fault latency: %d\n", *fault_latency_us);
+      break;
+    default:
+      *fault_method = FAULT_NONE;
+      fprintf(stderr, "Fault method: NONE\n");
+  }
+  return 0;
+}
+
+int parse_args(int argc, char *argv[], char **ip, int *port, int *verbose_level, enum fault_method *fault_method, int *fault_latency_us) {
   int opt;
   
   *ip = NULL;
@@ -41,9 +67,8 @@ int parse_args(int argc, char *argv[], char **ip, int *port, int *verbose_level,
         }
         break;
       case 'f':
-        *fault_latency_us = atoi(optarg);
-        if (*fault_latency_us <= 0) {
-            fprintf(stderr, "Error: Invalid fault latency value. It must be a positive integer.\n");
+        if (parse_fault_method(optarg, fault_method, fault_latency_us)) {
+            fprintf(stderr, "Error: Invalid fault method.\n");
             return 1;
         }                
         break;
@@ -83,7 +108,7 @@ int main(int argc, char **argv)
   char *ip_addr;
   int port_number;
   
-  if (parse_args(argc, argv, &ip_addr, &port_number, &current_verbose_level, &fault_latency_us) != 0) {
+  if (parse_args(argc, argv, &ip_addr, &port_number, &current_verbose_level, &fault_method, &fault_latency_us) != 0) {
     usage(argv[0]);
     return 1;
   }

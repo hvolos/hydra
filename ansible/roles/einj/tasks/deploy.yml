@@ -1,0 +1,11 @@
+---  
+- name: compile einj
+  shell: make
+  args:
+    chdir: "{{ hydra_home }}/einj"
+
+- name: load einj
+  shell: if ! lsmod | grep -q 'einj'; then sudo insmod einj.ko; fi
+  args:
+    chdir: "{{ hydra_home }}/einj"
+  become: yes

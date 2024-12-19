@@ -36,8 +36,9 @@ def deploy_hydra(roles, fault_latency_us=30):
     r = run_ansible([_playbook], roles=roles, extra_vars=extra_vars)
 
     # deploy resource monitor
-    cmd = f"{HYDRA_PATH}/resource_monitor/resource_monitor -f {fault_latency_us} {{{{ hostvars[inventory_hostname]['ibip'][inventory_hostname] }}}} 9400"
-    resource_monitor = Session(Command(cmd), session = "resource_monitor", nodes = roles['monitor'], extra_vars = extra_vars)
+    # cmd = f"{HYDRA_PATH}/resource_monitor/resource_monitor -f s:{fault_latency_us} {{{{ hostvars[inventory_hostname]['ibip'][inventory_hostname] }}}} 9400"
+    cmd = f"{HYDRA_PATH}/resource_monitor/resource_monitor -f j {{{{ hostvars[inventory_hostname]['ibip'][inventory_hostname] }}}} 9400"
+    resource_monitor = Session(Command(cmd, sudo = True), session = "resource_monitor", nodes = roles['monitor'], extra_vars = extra_vars)
     resource_monitor.deploy()
     resource_monitor.output()
 

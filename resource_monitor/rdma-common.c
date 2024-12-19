@@ -4,11 +4,11 @@
  * GPLv2 License
  */
 #include "rdma-common.h"
+#include "fault.h"
 #include "util.h"
 
 extern long page_size;
 extern int running;
-extern int fault_latency_us;
 
 static void build_context(struct ibv_context *verbs);
 static void build_qp_attr(struct ibv_qp_init_attr *qp_attr);
@@ -555,7 +555,7 @@ void on_completion(struct ibv_wc *wc)
       case FAULT:
         printv(PV_INFO, "%s, FAULT \n", __func__);
         atomic_set(&conn->cq_qp_state, CQ_QP_BUSY);
-        spin_microseconds(fault_latency_us);
+        inject_fault();
         send_fault_done(conn);
         post_receives(conn);
         break;

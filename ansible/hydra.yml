@@ -5,6 +5,12 @@
     - name: Gather facts on all hosts
       setup: {}
 
+- name: EINJ
+  hosts: monitor
+  roles:
+    - common
+    - einj
+
 - name: Hydra Resource Monitor
   hosts: monitor
   roles:

@@ -288,6 +288,9 @@ class Session:
         assert 'shell' in last_child_action
 
         last_child_cmd = last_child_action['shell']
+        if last_child_action['become'] == 'yes':
+            last_child_cmd = f'sudo {last_child_cmd}'
+
         shell_kwargs = {}
         if self.remote_working_dir:
             shell_kwargs['chdir'] = str(self.remote_working_dir)
